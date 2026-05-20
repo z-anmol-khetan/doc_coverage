@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>doc_coverage_2 Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #0b0f14;
+    --panel: #131a22;
+    --panel-2: #0f141b;
+    --border: #243140;
+    --text: #e6edf3;
+    --muted: #93a4b8;
+    --green: #3fb950;
+    --amber: #d29922;
+    --red: #f85149;
+    --blue: #58a6ff;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Inter, system-ui, sans-serif;
+    background: linear-gradient(180deg, #0a0d12, #0f141b 30%, #0b1016);
+    color: var(--text);
+  }
+  .wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  .topbar, .panel {
+    background: rgba(19, 26, 34, 0.92);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  }
+  .topbar {
+    padding: 18px 20px;
+    display: grid;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .title {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  h1, h2, h3 { margin: 0; }
+  h1 { font-size: 1.8rem; }
+  h2 { font-size: 1.1rem; margin-bottom: 16px; }
+  .subtle { color: var(--muted); }
+  .controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .dropzone {
+    border: 1px dashed #3a4b5f;
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: var(--muted);
+    background: var(--panel-2);
+    min-width: 280px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 20px;
+  }
+  .panel {
+    padding: 18px;
+    overflow: hidden;
+  }
+  .hero {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+    align-items: center;
+  }
+  .hero-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+  }
+  .stat {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .stat .label { color: var(--muted); font-size: 0.8rem; }
+  .stat .value { font-size: 1.4rem; font-weight: 700; margin-top: 8px; }
+  .full {
+    grid-column: 1 / -1;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+  th, td {
+    padding: 10px 8px;
+    border-bottom: 1px solid #1f2a36;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  .bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #1d2732;
+    overflow: hidden;
+    min-width: 120px;
+  }
+  .bar > span { display: block; height: 100%; }
+  .badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .green { color: var(--green); }
+  .amber { color: var(--amber); }
+  .red { color: var(--red); }
+  .badge.green { background: rgba(63,185,80,0.12); }
+  .badge.amber { background: rgba(210,153,34,0.12); }
+  .badge.red { background: rgba(248,81,73,0.12); }
+  .mono { font-family: var(--mono); }
+  details {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 12px;
+    background: var(--panel-2);
+    margin-bottom: 10px;
+  }
+  summary {
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .unit-row, .alert, .overlap-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 10px;
+    background: var(--panel-2);
+  }
+  .alert { border-color: rgba(248,81,73,0.35); }
+  .small { font-size: 0.84rem; color: var(--muted); }
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .stack {
+    display: grid;
+    gap: 12px;
+  }
+  .section-meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .subpanel {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    background: rgba(11, 15, 20, 0.4);
+  }
+  .empty {
+    color: var(--muted);
+    padding: 20px 0;
+  }
+  canvas { max-height: 300px; }
+  @media (max-width: 980px) {
+    .grid, .hero, .split { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <div>
+        <h1>doc_coverage_2 Dashboard</h1>
+        <div class="subtle">Hybrid QA-to-document coverage analysis</div>
+      </div>
+      <div class="subtle" id="status">Loading results.json…</div>
+    </div>
+    <div class="controls">
+      <input id="fileInput" type="file" accept="application/json">
+      <div id="dropzone" class="dropzone">Drop a results.json here if local fetch is unavailable.</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="panel full">
+      <h2>Score Hero</h2>
+      <div class="hero">
+        <div>
+          <canvas id="gradeRing"></canvas>
+        </div>
+        <div class="hero-stats" id="heroStats"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Coverage Distribution</h2>
+      <canvas id="coverageChart"></canvas>
+    </section>
+
+    <section class="panel">
+      <h2>QA Redundancy Map</h2>
+      <div id="redundancyMap"></div>
+    </section>
+
+    <section class="panel full">
+      <h2>Section Coverage Table</h2>
+      <div class="small">Click a header to sort.</div>
+      <div style="overflow:auto; margin-top: 10px;">
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="title">Section</th>
+              <th data-sort="coverage">Coverage %</th>
+              <th data-sort="units_covered">Covered</th>
+              <th data-sort="units_total">Total</th>
+              <th>Bar</th>
+            </tr>
+          </thead>
+          <tbody id="sectionTable"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel full">
+      <h2>Section Unit Details</h2>
+      <div class="small">Each section shows all units, then covered and not-covered subsets.</div>
+      <div id="sectionDetails" style="margin-top: 10px;"></div>
+    </section>
+
+    <section class="panel full">
+      <h2>Gap Report</h2>
+      <div id="gapReport"></div>
+    </section>
+
+    <section class="panel full">
+      <h2>Contradiction Alerts</h2>
+      <div id="contradictions"></div>
+    </section>
+
+    <section class="panel full">
+      <h2>Entity &amp; Symbol Coverage</h2>
+      <div style="overflow:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Kind</th>
+              <th>Covered</th>
+              <th>Units</th>
+            </tr>
+          </thead>
+          <tbody id="entityTable"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+let sectionSort = { key: 'coverage', dir: 'desc' };
+let gradeChart;
+let coverageChart;
+
+function pct(value) {
+  return `${Math.round((value || 0) * 100)}%`;
+}
+
+function scoreToGrade(score) {
+  const value = (score || 0) * 100;
+  if (value >= 90) return ['A', '#3fb950'];
+  if (value >= 80) return ['B', '#58a6ff'];
+  if (value >= 70) return ['C', '#d29922'];
+  if (value >= 60) return ['D', '#ff7b72'];
+  return ['F', '#f85149'];
+}
+
+function coverageColor(value) {
+  if (value >= 0.8) return '#3fb950';
+  if (value >= 0.6) return '#d29922';
+  return '#f85149';
+}
+
+function makeStat(label, value) {
+  return `<div class="stat"><div class="label">${label}</div><div class="value">${value}</div></div>`;
+}
+
+function renderHero(data) {
+  const [grade, color] = scoreToGrade(data.final_score);
+  document.getElementById('heroStats').innerHTML = [
+    makeStat('Final Score', `${Math.round(data.final_score * 100)}`),
+    makeStat('Grade', grade),
+    makeStat('Atomic Coverage', pct(data.atomic_coverage)),
+    makeStat('Critical Coverage', pct(data.critical_coverage)),
+    makeStat('Section Balance', pct(data.section_balance)),
+    makeStat('Diversity', pct(data.diversity_score)),
+    makeStat('Redundancy', String(data.redundancy_ratio ?? 'n/a')),
+    makeStat('Entity Coverage', pct(data.entity_coverage || 0)),
+  ].join('');
+
+  const ctx = document.getElementById('gradeRing');
+  gradeChart?.destroy();
+  gradeChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Score', 'Remaining'],
+      datasets: [{
+        data: [Math.round(data.final_score * 100), Math.max(0, 100 - Math.round(data.final_score * 100))],
+        backgroundColor: [color, '#1f2a36'],
+        borderWidth: 0,
+      }],
+    },
+    options: {
+      responsive: true,
+      cutout: '72%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false },
+      },
+    },
+    plugins: [{
+      id: 'centerText',
+      afterDraw(chart) {
+        const {ctx} = chart;
+        const meta = chart.getDatasetMeta(0).data[0];
+        if (!meta) return;
+        ctx.save();
+        ctx.fillStyle = '#e6edf3';
+        ctx.textAlign = 'center';
+        ctx.font = '700 46px Inter, sans-serif';
+        ctx.fillText(`${Math.round(data.final_score * 100)}`, meta.x, meta.y - 8);
+        ctx.font = '600 16px Inter, sans-serif';
+        ctx.fillStyle = color;
+        ctx.fillText(grade, meta.x, meta.y + 22);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+function renderCoverageDistribution(data) {
+  coverageChart?.destroy();
+  coverageChart = new Chart(document.getElementById('coverageChart'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(data.coverage_distribution || {}),
+      datasets: [{
+        data: Object.values(data.coverage_distribution || {}),
+        backgroundColor: ['#3fb950', '#58a6ff', '#d29922', '#ff7b72', '#f85149'],
+      }],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#93a4b8' }, grid: { color: '#1f2a36' } },
+        y: { ticks: { color: '#93a4b8' }, grid: { color: '#1f2a36' } },
+      },
+    },
+  });
+}
+
+function renderSections(data) {
+  const rows = [...(data.sections || [])];
+  rows.sort((a, b) => {
+    const dir = sectionSort.dir === 'asc' ? 1 : -1;
+    const left = a[sectionSort.key];
+    const right = b[sectionSort.key];
+    return left > right ? dir : left < right ? -dir : 0;
+  });
+  document.getElementById('sectionTable').innerHTML = rows.map(section => {
+    const color = coverageColor(section.coverage);
+    return `<tr>
+      <td>${section.title}</td>
+      <td class="mono" style="color:${color}">${Math.round(section.coverage * 100)}%</td>
+      <td>${section.units_covered}</td>
+      <td>${section.units_total}</td>
+      <td><div class="bar"><span style="width:${Math.round(section.coverage * 100)}%; background:${color}"></span></div></td>
+    </tr>`;
+  }).join('');
+}
+
+function groupUnitsBySection(units) {
+  return units.reduce((acc, unit) => {
+    const key = unit.section_title || 'Unknown';
+    (acc[key] ||= []).push(unit);
+    return acc;
+  }, {});
+}
+
+function renderMemberUnits(members) {
+  if (!members || members.length === 0) return '';
+  return `
+    <details style="margin-top:8px; border-color:#2a3a50;">
+      <summary class="small" style="color:#58a6ff;">${members.length} merged units</summary>
+      <div style="margin-top:6px; padding-left:10px; border-left:2px solid #243140;">
+        ${members.map(m => `
+          <div style="margin-top:6px; padding:8px; background:#0b0f14; border-radius:8px; border:1px solid #1f2a36;">
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <span class="small mono" style="color:#58a6ff;">${m.unit_id}</span>
+              ${m.label ? `<span class="badge ${m.label === 'not_covered' ? 'red' : m.label === 'mentioned_only' ? 'amber' : 'green'}">${m.label}</span>` : ''}
+              ${m.score != null ? `<span class="small" style="color:var(--muted);">score: ${m.score}</span>` : ''}
+              <span class="small" style="color:var(--muted);">importance: ${m.importance}</span>
+            </div>
+            <div class="small" style="margin-top:4px; color:#c9d1d9;">${m.text}</div>
+          </div>
+        `).join('')}
+      </div>
+    </details>
+  `;
+}
+
+function renderUnitRows(units, emptyText) {
+  return units.length ? units.map(unit => `
+    <div class="unit-row">
+      <div><span class="badge ${unit.coverage_label === 'not_covered' ? 'red' : unit.coverage_label === 'mentioned_only' ? 'amber' : 'green'}">${unit.coverage_label}</span></div>
+      <div style="margin-top:8px;">${unit.text}</div>
+      <div class="small" style="margin-top:8px;">${unit.unit_id} · Importance: ${unit.importance} · Score: ${unit.best_match_score} · BM25: ${unit.best_match_bm25 ?? 'n/a'}</div>
+      ${renderMemberUnits(unit.member_units)}
+    </div>
+  `).join('') : `<div class="empty">${emptyText}</div>`;
+}
+
+function renderSectionDetails(data) {
+  const sections = data.sections || [];
+  const html = sections.length ? sections.map(section => `
+    <details>
+      <summary>${section.title} <span class="small">(${section.units_covered}/${section.units_total} covered)</span></summary>
+      <div class="section-meta">
+        <span class="badge ${section.coverage >= 0.8 ? 'green' : section.coverage >= 0.6 ? 'amber' : 'red'}">${Math.round(section.coverage * 100)}% coverage</span>
+        <span class="small mono">${section.section_id || 'no-section-id'}</span>
+      </div>
+      <div class="stack" style="margin-top:12px;">
+        <div class="subpanel">
+          <strong>All Units</strong>
+          ${renderUnitRows(section.units || [], 'No units found for this section.')}
+        </div>
+        <div class="split">
+          <div class="subpanel">
+            <strong>Covered Units</strong>
+            ${renderUnitRows(section.covered_units || [], 'No covered units in this section.')}
+          </div>
+          <div class="subpanel">
+            <strong>Not Covered Units</strong>
+            ${renderUnitRows(section.not_covered_units || [], 'No not-covered units in this section.')}
+          </div>
+        </div>
+      </div>
+    </details>
+  `).join('') : `<div class="empty">No section details available.</div>`;
+  document.getElementById('sectionDetails').innerHTML = html;
+}
+
+function renderGapReport(data) {
+  const grouped = groupUnitsBySection([...(data.uncovered_units || []), ...(data.partially_covered_units || [])]);
+  const entries = Object.entries(grouped);
+  const html = entries.length ? entries.map(([section, units]) => `
+    <details>
+      <summary>${section} <span class="small">(${units.length} gaps)</span></summary>
+      ${renderUnitRows(units, 'No gaps in this section.')}
+    </details>
+  `).join('') : `<div class="empty">No uncovered or partially covered units.</div>`;
+  document.getElementById('gapReport').innerHTML = html;
+}
+
+function renderContradictions(data) {
+  const target = document.getElementById('contradictions');
+  const items = data.contradictions || [];
+  target.innerHTML = items.length ? items.map(item => `
+    <div class="alert">
+      <div><span class="badge red">${item.type}</span></div>
+      <div class="split" style="margin-top:10px;">
+        <div><div class="small">Source</div><div class="mono">${JSON.stringify(item.source_value)}</div></div>
+        <div><div class="small">QA</div><div class="mono">${JSON.stringify(item.qa_value)}</div></div>
+      </div>
+      <div class="small" style="margin-top:10px;">Unit: ${item.unit_id} · QA: ${item.qa_id}</div>
+    </div>
+  `).join('') : `<div class="empty">No contradictions detected.</div>`;
+}
+
+function renderRedundancy(data) {
+  const target = document.getElementById('redundancyMap');
+  const overlaps = data.qa_overlap_map || {};
+  const overCovered = new Map((data.over_covered_topics || []).map(item => [item.qa_id, item]));
+  const qaCoverage = data.qa_coverage_map || {};
+  const ids = Object.keys(qaCoverage);
+  target.innerHTML = ids.length ? ids.map(id => {
+    const flag = overCovered.get(id);
+    return `
+      <div class="overlap-card">
+        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <strong class="mono">${id}</strong>
+          ${flag ? '<span class="badge amber">over-covered</span>' : ''}
+        </div>
+        <div class="small" style="margin-top:6px;">Covers ${qaCoverage[id].length} units</div>
+        <div class="small">Overlaps with: ${(overlaps[id] || []).join(', ') || 'none'}</div>
+      </div>
+    `;
+  }).join('') : `<div class="empty">No QA overlap data.</div>`;
+}
+
+function renderEntities(data) {
+  const rows = data.entity_symbol_coverage || [];
+  document.getElementById('entityTable').innerHTML = rows.map(row => `
+    <tr>
+      <td class="mono">${row.name}</td>
+      <td>${row.kind}</td>
+      <td>${row.covered ? '<span class="badge green">covered</span>' : '<span class="badge red">missing</span>'}</td>
+      <td class="small">${(row.unit_ids || []).join(', ')}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" class="empty">No entities or symbols found.</td></tr>';
+}
+
+function renderAll(data, label='results.json') {
+  document.getElementById('status').textContent = `Loaded ${label}`;
+  renderHero(data);
+  renderCoverageDistribution(data);
+  renderSections(data);
+  renderSectionDetails(data);
+  renderGapReport(data);
+  renderContradictions(data);
+  renderRedundancy(data);
+  renderEntities(data);
+}
+
+async function loadDefault() {
+  try {
+    const response = await fetch('./results.json');
+    if (!response.ok) throw new Error('results.json fetch failed');
+    renderAll(await response.json());
+  } catch (error) {
+    document.getElementById('status').textContent = 'Could not fetch results.json. Use file picker or drag and drop.';
+  }
+}
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      renderAll(JSON.parse(reader.result), file.name);
+    } catch {
+      document.getElementById('status').textContent = 'Invalid JSON file.';
+    }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById('fileInput').addEventListener('change', (event) => {
+  const file = event.target.files?.[0];
+  if (file) handleFile(file);
+});
+
+const dropzone = document.getElementById('dropzone');
+['dragenter', 'dragover'].forEach(name => dropzone.addEventListener(name, (event) => {
+  event.preventDefault();
+  dropzone.style.borderColor = '#58a6ff';
+}));
+['dragleave', 'drop'].forEach(name => dropzone.addEventListener(name, (event) => {
+  event.preventDefault();
+  dropzone.style.borderColor = '#3a4b5f';
+}));
+dropzone.addEventListener('drop', (event) => {
+  const file = event.dataTransfer.files?.[0];
+  if (file) handleFile(file);
+});
+
+let currentData = null;
+
+document.querySelectorAll('th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if (sectionSort.key === key) {
+      sectionSort.dir = sectionSort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sectionSort = { key, dir: key === 'title' ? 'asc' : 'desc' };
+    }
+    if (currentData) renderSections(currentData);
+  });
+});
+
+const originalRenderAll = renderAll;
+renderAll = function(data, label='results.json') {
+  currentData = data;
+  originalRenderAll(data, label);
+};
+
+loadDefault();
+</script>
+</body>
+</html>

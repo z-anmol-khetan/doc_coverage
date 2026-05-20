@@ -1,0 +1,9 @@
+.claude/
+.venv/
+__pycache__/
+*.json
+*.xlsx
+*.pdf
+*.zip
+*.csv
+doc_coverage_2/
